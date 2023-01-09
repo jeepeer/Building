@@ -1,12 +1,13 @@
-#include "Building.h"
+#include "BuildingBox.h"
+#include "Components/BoxComponent.h"
 
 class UBoxComponent;
 
-ABuilding::ABuilding()
+ABuildingBox::ABuildingBox()
 {
-	spawnBox = CreateDefaultSubobject<UBoxComponent>(TEXT("spawnBox"));
-	spawnBox->SetupAttachment(RootComponent);
-
-	buildingBody = CreateDefaultSubobject<UBoxComponent>(TEXT("buildingBody"));
-	buildingBody->SetupAttachment(RootComponent);
+	buildingMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BuildingMesh"));
+	// Load Cube Mesh
+	UStaticMesh* cubeMesh = ConstructorHelpers::FObjectFinder<UStaticMesh>(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'")).Object;
+	buildingMesh->SetStaticMesh(cubeMesh);
+	
 }

@@ -18,6 +18,11 @@ class ABuildingCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
+
+	/** Building component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	class UBuildingComponent* BuildingComponent;
+
 public:
 	ABuildingCharacter();
 
@@ -57,6 +62,12 @@ protected:
 
 	/** Handler for when a touch input stops. */
 	void TouchStopped(ETouchIndex::Type FingerIndex, FVector Location);
+
+	/** Called for building the BuildingBox */ 
+	void Build();
+
+	/** Called for interacting with with the BuildingBox */
+	void Interact();
 
 protected:
 	// APawn interface

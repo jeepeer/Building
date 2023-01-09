@@ -2,7 +2,7 @@
 #include "Components/ActorComponent.h"
 #include "BuildingComponent.generated.h"
 
-class ABuilding;
+class ABuildingBox;
 
 UCLASS()
 class UBuildingComponent : public UActorComponent
@@ -20,22 +20,44 @@ private:
 
 	UBuildingComponent();
 
-	void PlaceBuilding();
+	void TickComponent
+	(
+		float DeltaTime,
+		enum ELevelTick TickType,
+		FActorComponentTickFunction* ThisTickFunction
+	);
 
-	FVector GetLineTraceImpactPoint();
-	void PlaceBuilding();
+	bool GetLineTraceImpactPoint(); // Look for collision?
 
 	FVector GetSpawnPosition();
 	FVector spawnPosition;
 	FVector maxSpawnPositionRange;
 	FVector minSpawnPositionRange;
 
+	FVector CubePosition();
+	
 	float maxRange;
 	float minRange;
 
 	UPROPERTY()
-	ABuilding* building;
+	ABuildingBox* building;
 	FRotator spawnRotation;
 
+	UPROPERTY(EditAnywhere)
+	UStaticMeshComponent* cube;
+
+	int state;
+	AActor* owner;
+
+	enum BuildingState
+	{
+		constructing,
+		dead,
+		alive
+	};
+
+public:
+
+	void PlaceBuilding(); // handle building action
 
 };

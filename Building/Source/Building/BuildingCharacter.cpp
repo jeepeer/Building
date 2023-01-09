@@ -8,6 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "BuildingComponent/BuildingComponent.h"
 
 //////////////////////////////////////////////////////////////////////////
 // ABuildingCharacter
@@ -43,6 +44,8 @@ ABuildingCharacter::ABuildingCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	BuildingComponent = CreateDefaultSubobject<UBuildingComponent>(TEXT("BuildingComponent"));
+
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
 }
@@ -74,6 +77,12 @@ void ABuildingCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ABuildingCharacter::OnResetVR);
+
+	// Build building
+	PlayerInputComponent->BindAction("Build", IE_Pressed, this, &ABuildingCharacter::Build);
+
+	// Interact with building
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ABuildingCharacter::Interact);
 }
 
 
@@ -90,12 +99,25 @@ void ABuildingCharacter::OnResetVR()
 
 void ABuildingCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
 {
-		Jump();
+	Jump();
 }
 
 void ABuildingCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
 {
-		StopJumping();
+	StopJumping();
+}
+
+void ABuildingCharacter::Build()
+{
+	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, "Build");
+	BuildingComponent->PlaceBuilding();
+}
+
+void ABuildingCharacter::Interact()
+{
+	// TODO
+	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, "Interact");
+
 }
 
 void ABuildingCharacter::TurnAtRate(float Rate)
