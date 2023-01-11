@@ -109,15 +109,12 @@ void ABuildingCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector Loc
 
 void ABuildingCharacter::Build()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, "Build");
-	BuildingComponent->PlaceBuilding();
+	BuildingComponent->HandleBuildingAction();
 }
 
 void ABuildingCharacter::Interact()
 {
-	// TODO
-	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, "Interact");
-
+	// WIP
 }
 
 void ABuildingCharacter::TurnAtRate(float Rate)

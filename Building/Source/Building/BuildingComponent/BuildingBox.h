@@ -12,8 +12,6 @@ class ABuildingBox : public AActor
 
 public:
 
-	int BuildingPlaced() { return 1; } // states?
-
 	enum State
 	{
 		dead,
@@ -24,13 +22,6 @@ public:
 private:
 	
 	ABuildingBox();
-
-	// get spawnbox color for the spawning
-
-	// building interaction
-	// opens UI
-	// building can be upgraded with scrap
-	// upgrade state? multiple upgrades? different sizes?
 
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* buildingBody;

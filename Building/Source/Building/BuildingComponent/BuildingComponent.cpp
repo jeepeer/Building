@@ -2,127 +2,203 @@
 #include "BuildingBox.h"
 #include "Building/BuildingCharacter.h"
 #include "Camera/CameraComponent.h"
+#include "DrawDebugHelpers.h"
 
 UBuildingComponent::UBuildingComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 
 	cube = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CUBE"));
-	// Load Cube Mesh
-	UStaticMesh* cubeMesh = ConstructorHelpers::FObjectFinder<UStaticMesh>(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'")).Object;
-	// load more meshes to swap between ?
-	cube->SetStaticMesh(cubeMesh); // color change mebe?
-	auto pe = FVector::UpVector * - 1000.f;
-	cube->SetWorldLocation(pe);
-
-	owner = GetOwner();
 	
+	// Load Cube Mesh
+	cubeMesh = ConstructorHelpers::FObjectFinder<UStaticMesh>(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'")).Object;
+	
+	// Load Materials
+	redMaterial = ConstructorHelpers::FObjectFinder<UMaterial>(TEXT("Material'/Engine/EditorMaterials/WidgetMaterial_X'")).Object;
+	greenMaterial = ConstructorHelpers::FObjectFinder<UMaterial>(TEXT("Material'/Engine/EditorMaterials/WidgetMaterial_Y'")).Object;
+	
+	// Set Mesh
+	cube->SetStaticMesh(cubeMesh);
+
+	// Initializing variables
+	owner = GetOwner();
+	state = dead;
+	bCanBuild = false;
 	spawnPosition = FVector(0.f, 0.f, 0.f);
 	spawnRotation = FRotator(0.f, 0.f, 0.f);
-	maxSpawnPositionRange = FVector(0.f, 0.f, 0.f);
-	minSpawnPositionRange = FVector(0.f, 0.f, 0.f);
+	defaultPosition = FVector::UpVector * -1000.f;
 
-	state = dead;
+	// Set cube location under the map
+	cube->SetWorldLocation(defaultPosition);
 }
 
-void UBuildingComponent::PlaceBuilding()
+void UBuildingComponent::HandleBuildingAction()
 {
-	// if building is under construction
-	// and there's no collision issues
-	// place
-
+	// Gets called on right click
 	switch (state)
 	{
+	// Checks to see if you're able to construct a building
 	case constructing:
 	{
-		FActorSpawnParameters spawnInfo;
-		ABuildingBox* test = GetWorld()->SpawnActor<ABuildingBox>(GetSpawnPosition(), spawnRotation, spawnInfo);
-		state = alive;
-		GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Green, "CONSTRUCTING");
+		ConstructingBuilding();
 		break;
 	}
+	// WIP
 	case dead:
 	{
-		// move cube 
-		// green if placeable
-		// red if not
-		//constructing;
-		cube->SetWorldLocation(FVector::UpVector * 100.f);
-		state = constructing;
-		GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Green, "DEAD");
+		DestroyBuilding();
 		break;
 	}
-	case alive:
+	// WIP
+	case alive: 
 	{
-		// if the building is alive then there's nothing to do?
-		// or menu ?
-		GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Green, "ALIVE");
-		return;
+		BuiltBuilding();
 		break;
 	}
 	}
 }
 
-FVector UBuildingComponent::GetSpawnPosition()
+void UBuildingComponent::ConstructingBuilding()
 {
-	// line trace too see if there is any collision 
-	// if there is collision distance is greater than min range
-	// then take collision hit location - size of building
+	if (bCanBuild == false) { return; }
 
-	if (GetLineTraceImpactPoint())
-	{
-		return FVector::ZeroVector;
-	}
-
-	FVector newPos;
-	newPos = owner->GetActorLocation() + owner->GetActorForwardVector() * 1000.f;
-	newPos.Z += 100.f;
-	return newPos;
+	ConstructBuilding();
+	state = alive;
 }
 
+void UBuildingComponent::ConstructBuilding()
+{
+	FActorSpawnParameters spawnInfo;
+	// Spawn the building where the cube was placed
+	ABuildingBox* test = GetWorld()->SpawnActor<ABuildingBox>(CubePosition(), spawnRotation, spawnInfo);
+
+	// Reset the cube's position
+	cube->SetWorldLocation(defaultPosition);
+}
+
+void UBuildingComponent::DestroyBuilding()
+{
+	// Set state to constructing
+	// Next HandleBuildingAction will go to constructing
+	state = constructing;
+}
+
+void UBuildingComponent::BuiltBuilding()
+{
+	// WIP
+	return;
+}
 
 void UBuildingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// if state is correct
-	// then move the cube according to the camera / actor
 	if (state == constructing && cube != nullptr)
 	{
-		// only movement
+		SetCubeMaterial();
+		SetCubeRotation();
 		cube->SetWorldLocation(CubePosition());
-		GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Red, "tick");
 	}
 }
 
-FVector UBuildingComponent::CubePosition()
+void UBuildingComponent::SetCubeMaterial()
+{
+	GetCubeMaterialState();
+
+	switch (materialState)
+	{
+	case green:
+	{
+		cube->SetMaterial(0, greenMaterial);
+		materialState = ignore;
+		break;
+	}
+	case red:
+	{
+		cube->SetMaterial(0, redMaterial);
+		materialState = ignore;
+		break;
+	}
+	}
+}
+
+void UBuildingComponent::GetCubeMaterialState()
+{
+	// LineTrace setup
+	FVector start = cube->GetComponentLocation();
+	float length = -200.f;
+	FVector end = start + FVector::UpVector * length;
+
+	FVector startLeft = cube->GetComponentLocation() + (cube->GetRightVector() * -50.f)
+		+ (cube->GetForwardVector() * -70.f);
+	FVector endLeft = startLeft + cube->GetForwardVector() * 140.f;
+
+	FVector startRight = cube->GetComponentLocation() + (cube->GetRightVector() * 50.f)
+		+ (cube->GetForwardVector() * -70.f);
+	FVector endRight = startRight + cube->GetForwardVector() * 140.f;
+
+	// LineTrace checks if there is anything under the cube,
+	// infront or behind the cube on the left and right side
+	bool bCanBePlaced = LineTraceHitResult(startLeft, endLeft) == false
+		&& LineTraceHitResult(startRight, endRight) == false
+		&& LineTraceHitResult(start, end);
+
+	if (bCanBePlaced)
+	{
+		materialState = green;
+		bCanBuild = true;
+	}
+	else
+	{
+		materialState = red;
+		bCanBuild = false;
+	}
+}
+
+void UBuildingComponent::SetCubeRotation()
+{
+	cube->SetRelativeRotation(owner->GetActorRotation());
+}
+
+bool UBuildingComponent::LineTraceHitResult(FVector start, FVector end)
+{
+	FHitResult hit;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(owner);
+	QueryParams.AddIgnoredComponent(cube);
+	if (GetWorld()->LineTraceSingleByChannel(hit, start, end, ECC_WorldStatic, QueryParams))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+FVector UBuildingComponent::CubePosition() 
 {
 	FVector playerForwardVector = owner->GetActorLocation() + owner->GetActorForwardVector() * 200.f;
-
-	playerForwardVector.Z = 200.f;
+	playerForwardVector.Z = GetNewZPosition();
 
 	return playerForwardVector;
 }
 
-bool UBuildingComponent::GetLineTraceImpactPoint()
+float UBuildingComponent::GetNewZPosition() 
 {
-	// line trace and get impact point
 	FHitResult hit;
-	FVector start = owner->GetActorLocation() + owner->GetActorForwardVector();
+	FVector start = owner->GetActorLocation() + owner->GetActorForwardVector() * 200.f;
+	
+	float length = -200.f;
+	FVector end = start + FVector::UpVector * length;
 
-	float magnitude = 200.f;
-	FVector end = start * magnitude;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(owner);
 
 	if (GetWorld()->LineTraceSingleByChannel(hit, start, end, ECC_WorldStatic, QueryParams))
 	{
-		float dis = hit.Distance;
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "HIT");
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::SanitizeFloat(dis));
-		return true;
+		float newZ = hit.ImpactPoint.Z + 50.f;
+		tempZ = newZ;
+		return newZ;
 	}
 
-	// return some default spawn point ?
-	return false;
+	return tempZ;
 }

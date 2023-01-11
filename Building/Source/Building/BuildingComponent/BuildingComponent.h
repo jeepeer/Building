@@ -10,13 +10,6 @@ class UBuildingComponent : public UActorComponent
 	GENERATED_BODY()
 
 private:
-	
-	// shoot 
-	// if there is flat ground
-	// show green box
-	// place box
-	// else 
-	// show red box
 
 	UBuildingComponent();
 
@@ -26,28 +19,36 @@ private:
 		enum ELevelTick TickType,
 		FActorComponentTickFunction* ThisTickFunction
 	);
-
-	bool GetLineTraceImpactPoint(); // Look for collision?
-
-	FVector GetSpawnPosition();
-	FVector spawnPosition;
-	FVector maxSpawnPositionRange;
-	FVector minSpawnPositionRange;
-
+	float GetNewZPosition();
 	FVector CubePosition();
-	
-	float maxRange;
-	float minRange;
+	void ConstructingBuilding();
+	void ConstructBuilding();
+	void DestroyBuilding();
+	void BuiltBuilding();
+	void SetCubeMaterial();
+	void GetCubeMaterialState();
+	void SetCubeRotation();
+	bool LineTraceHitResult(FVector start, FVector end);
 
-	UPROPERTY()
-	ABuildingBox* building;
+	FVector spawnPosition;
+	FVector defaultPosition;
 	FRotator spawnRotation;
+
+	bool bCanBuild;
+	
+	int state;
+	int materialState;
+	float tempZ;
 
 	UPROPERTY(EditAnywhere)
 	UStaticMeshComponent* cube;
+	UPROPERTY()
+	ABuildingBox* building;
 
-	int state;
 	AActor* owner;
+	UStaticMesh* cubeMesh;
+	UMaterial* redMaterial;
+	UMaterial* greenMaterial;
 
 	enum BuildingState
 	{
@@ -56,8 +57,14 @@ private:
 		alive
 	};
 
+	enum MaterialState
+	{
+		green,
+		red,
+		ignore
+	};
+
 public:
 
-	void PlaceBuilding(); // handle building action
-
+	void HandleBuildingAction(); // handle building action
 };
